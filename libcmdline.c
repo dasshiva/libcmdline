@@ -229,9 +229,12 @@ static int ParseLongOption(int* idx, int argc, char** argv,
 
 static int ParseDefaultOptionArgs(int* idx, int argc, char** argv, 
         char* opt) {
+	dopt |= OPTION_PRESENT;
     return ParseArgs(dopt, idx, argc, argv);
 }
 
-static int ParseArgs(Option*, int*, int, char**) {
+static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
+	char* schema = opt->Fmt;
+
     return SUCCESS;
 }
