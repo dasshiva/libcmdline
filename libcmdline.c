@@ -192,6 +192,8 @@ static Option* FindLongOpt(const char* name, int len) {
 }
 
 
+static int ParseArgs(Option*, int*, int, char**);
+
 static int ParseShortOption(int* idx, int argc, char** argv, 
         char* opt, int len) {
     // If we came here, len > 2
@@ -206,7 +208,7 @@ static int ParseShortOption(int* idx, int argc, char** argv,
     if (!option->NArgs)
         return SUCCESS;
 
-    return SUCCESS;
+    return ParseArgs(option, idx, argc, argv);
 }
 
 static int ParseLongOption(int* idx, int argc, char** argv, 
@@ -222,10 +224,14 @@ static int ParseLongOption(int* idx, int argc, char** argv,
         return SUCCESS;
 
     *idx++;
-    return SUCCESS;
+    return ParseArgs(option, idx, argc, argv); 
 }
 
 static int ParseDefaultOptionArgs(int* idx, int argc, char** argv, 
         char* opt) {
+    return ParseArgs(dopt, idx, argc, argv);
+}
+
+static int ParseArgs(Option*, int*, int, char**) {
     return SUCCESS;
 }
