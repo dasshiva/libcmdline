@@ -45,6 +45,7 @@ typedef struct {
 
 #define OPTION_REQUIRED (1U << 0)
 #define OPTION_DEFAULT  (1U << 1)
+#define OPTION_PRESENT  (1U << 2)
 
 int ProgramDetails(Program* prog);
 int RegisterOptions(Option* options, uint32_t len);
@@ -53,9 +54,11 @@ int FreeOptions(Option* options, uint32_t len);
 
 #define ARG_NULL (-1)
 #define UNEXPECTED_FORMAT_ARG (-2)
-#define INVALID_OPTION_ARGS (-3)
+#define INVALID_OPTION (-3)
 #define DUPLICATE_DEFAULT_OPTION (-4)
 #define INVALID_DEFAULT_OPTION_ARGS (-5)
+#define UNKNOWN_SHORT_OPTION (-6)
+#define UNKNOWN_LONG_OPTION (-7)
 
 #define SUCCESS  (1)
 #define INVALID_OPTION_INDEX(x) (((x) > SUCCESS) ? ((x) - SUCCESS - 1) : -1)

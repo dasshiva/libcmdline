@@ -151,7 +151,7 @@ int ParseOptions(int argc, char** argv) {
         if (len > 2) {
             if (sptr[0] == '-') 
                 if (ParseShortOption(&i, argc, argv, sptr, len - 1) < 0)
-                    return INVALID_OPTION_ARGS;
+                    return INVALID_OPTION;
 
             if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
                 return INVALID_DEFAULT_OPTION_ARGS;
@@ -160,7 +160,7 @@ int ParseOptions(int argc, char** argv) {
         else if (len > 3) {
             if (sptr[0] == '-' && sptr[1] == '-')
                 if (ParseLongOption(&i, argc, argv, sptr, len - 2) < 0)
-                    return INVALID_OPTION_ARGS;
+                    return INVALID_OPTION;
 
             if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
                 return INVALID_DEFAULT_OPTION_ARGS;
@@ -173,13 +173,55 @@ int ParseOptions(int argc, char** argv) {
     return SUCCESS;
 }
 
+static Option* FindShortOpt(const char* name, int len) {
+    for (uint32_t n = 0; n < optlen; n++) {
+        if (strncmp(opts[n].ShortOption, name, len) == 0)
+            return &opts[n];
+    }
+
+    return NULL;
+}
+
+static Option* FindLongOpt(const char* name, int len) {
+    for (uint32_t n = 0; n < optlen; n++) {
+        if (strncmp(opts[n].LongOption, name, len) == 0)
+            return &opts[n];
+    }
+
+    return NULL;
+}
+
+
 static int ParseShortOption(int* idx, int argc, char** argv, 
         char* opt, int len) {
+    // If we came here, len > 2
+    opt++;
+    Option* option = FindShortOpt(opt, len);
+    if (!option)
+        return UNKNOWN_SHORT_OPTION;
+
+    option->Flags |= OPTION_PRESENT;
+
+    *idx++;
+    if (!option->NArgs)
+        return SUCCESS;
+
     return SUCCESS;
 }
 
 static int ParseLongOption(int* idx, int argc, char** argv, 
         char* opt, int len) {
+    // If we came here, len > 3
+    opt += 2;
+    Option* option = FindLongOpt(opt, len);
+    if (!option)
+        return UNKNOWN_LONG_OPTION;
+
+    option->Flags |= OPTION_PRESENT;
+    if (!option->NArgs)
+        return SUCCESS;
+
+    *idx++;
     return SUCCESS;
 }
 
