@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define OPTION_HELP            ((Option*)((void*)-1))
 #define NO_WORK                 (1U << 0)
 #define REQUIRED_OPTION_PRESENT (1U << 1)
 #define DEFAULT_OPTION_PRESENT  (1u << 2)
@@ -11,14 +12,14 @@ static Program* program    = NULL;
 static Option*  opts       = NULL;
 static uint32_t optlen     = 0U;
 static uint32_t stateflags = 0U;
+
 static Option*  dopt       = NULL;
-static int init = 0;
 
 // Internal values of Option->flags
+#define OPTION_DONE       (1U << 3)
 #define NO_HELP_OPTION    (1U << 4)
 #define HAVE_SHORT_OPTION (1U << 6)
 #define HAVE_LONG_OPTION  (1U << 7)
-
 
 static int ParseSchema(Option opt, const char* fmt) {
     if (!fmt)
@@ -179,6 +180,8 @@ static Option* FindShortOpt(const char* name, int len) {
             return &opts[n];
     }
 
+    if (strcmp(name, "h") == 0)
+        return OPTION_HELP;
     return NULL;
 }
 
@@ -187,6 +190,9 @@ static Option* FindLongOpt(const char* name, int len) {
         if (strncmp(opts[n].LongOption, name, len) == 0)
             return &opts[n];
     }
+
+    if (strcmp(name, "h") == 0)
+        return OPTION_HELP;
 
     return NULL;
 }
@@ -202,12 +208,19 @@ static int ParseShortOption(int* idx, int argc, char** argv,
     if (!option)
         return UNKNOWN_SHORT_OPTION;
 
+    if (option == OPTION_HELP) {
+        GenerateHelp(argv[0]);
+        return SUCCESS;
+    }
+
+    if (option->Flags & OPTION_DONE)
+        return DUPLICATE_OPTION;
+
     option->Flags |= OPTION_PRESENT;
 
     *idx++;
     if (!option->NArgs)
         return SUCCESS;
-
     return ParseArgs(option, idx, argc, argv);
 }
 
@@ -219,6 +232,14 @@ static int ParseLongOption(int* idx, int argc, char** argv,
     if (!option)
         return UNKNOWN_LONG_OPTION;
 
+     if (option == OPTION_HELP) {
+        GenerateHelp(argv[0]);
+        return SUCCESS;
+    }
+
+     if (option->Flags & OPTION_DONE)
+        return DUPLICATE_OPTION;
+
     option->Flags |= OPTION_PRESENT;
     if (!option->NArgs)
         return SUCCESS;
@@ -229,12 +250,75 @@ static int ParseLongOption(int* idx, int argc, char** argv,
 
 static int ParseDefaultOptionArgs(int* idx, int argc, char** argv, 
         char* opt) {
-	dopt |= OPTION_PRESENT;
+     if (dopt->Flags & OPTION_DONE)
+        return DUPLICATE_OPTION;
+
+	dopt->Flags |= OPTION_PRESENT;
     return ParseArgs(dopt, idx, argc, argv);
 }
 
 static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
-	char* schema = opt->Fmt;
+    char* schema = opt->Fmt;
+    uint32_t opt_idx = 0;
 
+    while (*schema) {
+        if (*idx >= argc)
+            return INSUFFICIENT_OPTION_ARGS;
+
+        if (*schema == '-') {
+            schema++;
+            continue;
+        }
+
+        else if (*schema == 's') {
+            opt->Args[opt_idx].String = argv[*idx];
+            opt->Args[opt_idx].Type = TYPE_STRING;
+            opt_idx++;
+            *idx++;
+        }
+
+        else {
+            char* endptr = "";
+            int64_t n = strtoll(argv[*idx], &endptr, 0);
+            if (*endptr)
+                return INVALID_INTEGER_LITERAL;
+            opt->Args[opt_idx].Number = n;
+            opt->Args[opt_idx].Type = TYPE_NUMBER;
+            opt_idx++;
+            *idx++;
+        }
+        
+    }
+
+    if (opt->Func)
+        if (opt->Func(opt->Args, opt->NArgs) < 0)
+            return USER_FUNC_ERROR;
+
+    dopt->Flags |= OPTION_DONE;
     return SUCCESS;
+}
+
+void GenerateHelp(const char* progname) {
+    if (program)
+        fprintf(stdout, "%s %s\n%s\n", program->Name, program->Version,
+                program->Copyright);
+    fprintf(stdout, "%s [OPTIONS] ", progname);
+    if (dopt) 
+        fprintf(stdout, "<%s>\n", dopt->LongOption);
+    else
+        fprintf(stdout, "\n");
+
+    fprintf(stdout, "Available options: \n");
+    for (uint32_t opt = 0; opt < optlen; opt++) {
+        Option option = opts[opt];
+        if (option.Flags & HAVE_SHORT_OPTION)
+            fprintf(stdout, "%s", option.ShortOption);
+
+        if (option.Flags & HAVE_LONG_OPTION)
+            fprintf(stdout, "/%s ", option.LongOption);
+
+        if (!(option.Flags & NO_HELP_OPTION))
+            fprintf(stdout, "\t- %s", option.Help);
+        fprintf(stdout, "\n");
+    }
 }
