@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
 	RegisterOptions(options, 2);
 	if (ParseOptions(argc, argv) < 0)
 		return 1;
+
 	return 0;
 }
 

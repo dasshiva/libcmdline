@@ -47,14 +47,6 @@ static int ParseSchema(Option opt, const char* fmt) {
     if (n != opt.NArgs)
         return -1;
 
-    // If opt.args is initialised these are the default values
-    // for the option's arguments and we should not touch them
-    if (!opt.Args)
-        opt.Args = malloc(sizeof(OptionArgs) * n);
-
-    if (!opt.Args)
-        return -1;
-
     return SUCCESS;
 }
 
@@ -271,6 +263,11 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
     char* schema = opt->Fmt;
     uint32_t opt_idx = 0;
 
+	// If opt.args is initialised these are the default values
+    // for the option's arguments and we should not touch them
+    if (!opt->Args)
+        opt->Args = malloc(sizeof(OptionArgs) * opt->NArgs);
+
     while (*schema) {
         if (*idx >= argc)
             return INSUFFICIENT_OPTION_ARGS;
@@ -297,6 +294,8 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
             opt_idx++;
             (*idx)++;
         }
+
+		schema++;
         
     }
 
@@ -304,7 +303,7 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
         if (opt->Func(opt->Args, opt->NArgs) < 0)
             return USER_FUNC_ERROR;
 
-    dopt->Flags |= OPTION_DONE;
+    opt->Flags |= OPTION_DONE;
     return SUCCESS;
 }
 
