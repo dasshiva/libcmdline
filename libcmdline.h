@@ -64,6 +64,7 @@ void GenerateHelp(const char* progname);
 #define INVALID_INTEGER_LITERAL (-9)
 #define USER_FUNC_ERROR (-10)
 #define DUPLICATE_OPTION (-11)
+#define REQUIRED_OPTION_MISSING (-12)
 
 #define SUCCESS  (1)
 #define INVALID_OPTION_INDEX(x) (((x) > SUCCESS) ? ((x) - SUCCESS - 1) : -1)

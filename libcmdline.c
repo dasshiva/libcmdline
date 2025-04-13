@@ -77,7 +77,7 @@ int RegisterOptions(Option* options, uint32_t len) {
         stateflags |= NO_WORK;
 
     for (uint32_t opt = 0; opt < len; opt++) {
-        Option option = options[opt];
+        Option option = opts[opt];
         if (option.ShortOption)
             option.Flags |= HAVE_SHORT_OPTION;
 
@@ -117,22 +117,19 @@ static int ParseDefaultOptionArgs(int*, int, char**, char*);
 
 int ParseOptions(int argc, char** argv) {
     if (argc == 1) {
-        if ((stateflags & NO_WORK) || 
+        /*if ((stateflags & NO_WORK) || 
            !((stateflags & REQUIRED_OPTION_PRESENT) &&
                (stateflags & DEFAULT_OPTION_PRESENT)))
-            return SUCCESS;
+            return SUCCESS; */
 
         // Default option itself has default arguments
-        if (dopt->Args)
-            return SUCCESS;
+        if (dopt) 
+			if (dopt->Args)
+				return SUCCESS;
     }
 
     // Save the program name
-    const char* progname = argv[0];
-
-    // Remove the program name from the argument list
-    argv++; 
-    argc--;
+    const char* progname = argv[0]; 
 
     // All options look like this
     // Option = LONG_OPT | SHORT_OPT
@@ -144,32 +141,47 @@ int ParseOptions(int argc, char** argv) {
     // ARG = string | number
     // string = <pseudo symbol that represents all sequences of characters>
     // number = <pseudo symbol that represents all sequences of digits>
-    for (int i = 0; i < argc;) {
+    for (int i = 1; i < argc;) {
         char* sptr = argv[i];
         int len = strlen(sptr);
         i++;
 
-        if (len > 2) {
-            if (sptr[0] == '-') 
-                if (ParseShortOption(&i, argc, argv, sptr, len - 1) < 0)
-                    return INVALID_OPTION;
-
-            if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
-                return INVALID_DEFAULT_OPTION_ARGS;
-        }
-
-        else if (len > 3) {
-            if (sptr[0] == '-' && sptr[1] == '-')
+		if (len >= 3) {
+            if (sptr[0] == '-' && sptr[1] == '-') {
                 if (ParseLongOption(&i, argc, argv, sptr, len - 2) < 0)
                     return INVALID_OPTION;
+			}
 
-            if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
+			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
                 return INVALID_DEFAULT_OPTION_ARGS;
         }
+
+		else if (len >= 2) {
+            if (sptr[0] == '-') {
+                if (ParseShortOption(&i, argc, argv, sptr, len - 1) < 0)
+                    return INVALID_OPTION;
+			}
+
+			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
+                return INVALID_DEFAULT_OPTION_ARGS;
+        }
+
 
         else { /* All cases are already covered */ }
 
     }
+
+	for (uint32_t id = 0; id < optlen; id++) {
+		Option opt = opts[id];
+		if ((opt.Flags & OPTION_REQUIRED) && !(opt.Flags & OPTION_PRESENT)) {
+			if (opt.ShortOption) 
+				fprintf(stdout, "Required option -%s not found\n", opt.ShortOption);
+			else
+				fprintf(stdout, "Required option --%s not found\n", opt.LongOption);
+			return REQUIRED_OPTION_MISSING;
+
+		}
+	}
 
     return SUCCESS;
 }
@@ -218,7 +230,6 @@ static int ParseShortOption(int* idx, int argc, char** argv,
 
     option->Flags |= OPTION_PRESENT;
 
-    *idx++;
     if (!option->NArgs)
         return SUCCESS;
     return ParseArgs(option, idx, argc, argv);
@@ -244,7 +255,6 @@ static int ParseLongOption(int* idx, int argc, char** argv,
     if (!option->NArgs)
         return SUCCESS;
 
-    *idx++;
     return ParseArgs(option, idx, argc, argv); 
 }
 
@@ -274,7 +284,7 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
             opt->Args[opt_idx].String = argv[*idx];
             opt->Args[opt_idx].Type = TYPE_STRING;
             opt_idx++;
-            *idx++;
+            (*idx)++;
         }
 
         else {
@@ -285,7 +295,7 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
             opt->Args[opt_idx].Number = n;
             opt->Args[opt_idx].Type = TYPE_NUMBER;
             opt_idx++;
-            *idx++;
+            (*idx)++;
         }
         
     }
@@ -311,11 +321,11 @@ void GenerateHelp(const char* progname) {
     fprintf(stdout, "Available options: \n");
     for (uint32_t opt = 0; opt < optlen; opt++) {
         Option option = opts[opt];
-        if (option.Flags & HAVE_SHORT_OPTION)
-            fprintf(stdout, "%s", option.ShortOption);
+        if (option.ShortOption)
+            fprintf(stdout, "-%s", option.ShortOption);
 
-        if (option.Flags & HAVE_LONG_OPTION)
-            fprintf(stdout, "/%s ", option.LongOption);
+        if (option.LongOption)
+            fprintf(stdout, "/--%s ", option.LongOption);
 
         if (!(option.Flags & NO_HELP_OPTION))
             fprintf(stdout, "\t- %s", option.Help);
