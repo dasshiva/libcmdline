@@ -54,7 +54,13 @@ int ProgramDetails(Program* prog) {
 
 static Option* FindShortOpt(Option** opts, const uint32_t oplen, 
         const char* name) {
+
     for (uint32_t n = 0; n < oplen; n++) {
+        if (!opts[n]->ShortOption) {
+            n++;
+            continue;
+        }
+
         if (strcmp(opts[n]->ShortOption, name) == 0)
             return opts[n];
     }
@@ -67,7 +73,13 @@ static Option* FindShortOpt(Option** opts, const uint32_t oplen,
 
 static Option* FindLongOpt(Option** opts, const uint32_t oplen, 
         const char* name) {
+
     for (uint32_t n = 0; n < oplen; n++) {
+        if (!opts[n]->LongOption) {
+            n++;
+            continue;
+        }
+
         if (strcmp(opts[n]->LongOption, name) == 0)
             return opts[n];
     }
@@ -199,8 +211,10 @@ void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen) {
         if (option->ShortOption)
             fprintf(stdout, "-%s", option->ShortOption);
 
+        if (option->ShortOption && option->LongOption)
+            fprintf(stdout, "/");
         if (option->LongOption)
-            fprintf(stdout, "/--%s ", option->LongOption);
+            fprintf(stdout, "--%s ", option->LongOption);
 
         if (!(option->Flags & NO_HELP_OPTION))
             fprintf(stdout, "\t- %s", option->Help);
@@ -217,8 +231,6 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
         tmp++;
         oplen++;
     }
-
-    printf("oplen = %u\n", oplen);
 
     if (!oplen)
         state |= NO_WORK;
@@ -260,10 +272,10 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
     }
 
     if (argc == 1) {
-        /*if ((stateflags & NO_WORK) || 
-           !((stateflags & REQUIRED_OPTION_PRESENT) &&
-               (stateflags & DEFAULT_OPTION_PRESENT)))
-            return SUCCESS; */
+        if ((state & NO_WORK) || 
+           !((state& REQUIRED_OPTION_PRESENT) &&
+               (state & DEFAULT_OPTION_PRESENT)))
+            return SUCCESS;
 
         // Default option itself has default arguments
         if (defopt) 

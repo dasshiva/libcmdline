@@ -1,7 +1,7 @@
 #include "libcmdline.h"
 #include <stdlib.h>
 
-Option optimise = { "o", "optimise", "Specify the degree of optimisation", 
+Option optimise = { NULL, "optimise", "Specify the degree of optimisation", 
     "n", NULL, NULL, 1, OPTION_REQUIRED };
 Option file = { "f", "file", "Specify the input file", "s", NULL, NULL, 
 		1, OPTION_REQUIRED | OPTION_DEFAULT };
