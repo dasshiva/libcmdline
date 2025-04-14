@@ -15,8 +15,14 @@ Option* options[] = {
 Program desc = { "Optimiser", "0.0.1", "Copyright(C) John Doe 2021-25" };
 int main(int argc, const char** argv) {
     ProgramDetails(&desc);
-	if (ParseOptions((Option**)&options, argc, argv) < 0)
+	int s = ParseOptions((Option**)&options, argc, argv);
+	if (s < 0) {
+		printf("Result = %d\n", s);
 		return 1;
+	}
+
+	printf("File = %s\n", file.Args->String);
+	printf("Optimisation = %ld\n", optimise.Args->Number);
 	return 0;
 }
 

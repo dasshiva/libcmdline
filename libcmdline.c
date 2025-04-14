@@ -56,10 +56,8 @@ static Option* FindShortOpt(Option** opts, const uint32_t oplen,
         const char* name) {
 
     for (uint32_t n = 0; n < oplen; n++) {
-        if (!opts[n]->ShortOption) {
+        if (!opts[n]->ShortOption) 
             n++;
-            continue;
-        }
 
         if (strcmp(opts[n]->ShortOption, name) == 0)
             return opts[n];
@@ -75,10 +73,9 @@ static Option* FindLongOpt(Option** opts, const uint32_t oplen,
         const char* name) {
 
     for (uint32_t n = 0; n < oplen; n++) {
-        if (!opts[n]->LongOption) {
-            n++;
+        if (!opts[n]->LongOption) 
             continue;
-        }
+        
 
         if (strcmp(opts[n]->LongOption, name) == 0)
             return opts[n];
@@ -213,10 +210,11 @@ void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen) {
 
         if (option->ShortOption && option->LongOption)
             fprintf(stdout, "/");
+
         if (option->LongOption)
             fprintf(stdout, "--%s ", option->LongOption);
 
-        if (!(option->Flags & NO_HELP_OPTION))
+        if (option->Help)
             fprintf(stdout, "\t- %s", option->Help);
         fprintf(stdout, "\n");
     }
@@ -239,18 +237,9 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
     uint32_t opt = 0;
     while (*tmp) {
         Option* option = *tmp;
-        if (option->ShortOption)
-            option->Flags |= HAVE_SHORT_OPTION;
-
-        if (option->LongOption)
-            option->Flags |= HAVE_LONG_OPTION;
-
-        if (!(option->Flags & HAVE_SHORT_OPTION) && 
-                !(option->Flags & HAVE_LONG_OPTION)) 
+        if (!(option->ShortOption) && 
+                !(option->LongOption)) 
             return (opt + SUCCESS + 1); // + 1 ensures we don't return SUCCESS
-
-        if (!option->Help)
-            option->Flags |= NO_HELP_OPTION;
 
         if ((!option->NArgs && option->Fmt) || (option->NArgs && !option->Fmt))
             return UNEXPECTED_FORMAT_ARG;
@@ -267,6 +256,7 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
             state |= DEFAULT_OPTION_PRESENT;
             defopt = option;
         }
+
         opt++;
         tmp++;
     }
