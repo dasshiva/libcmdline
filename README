@@ -18,3 +18,5 @@ understand its source very quickly. It is not meant to be the fastest of
 its kind but it does it job effectively.
 
 The file main.c demonstrates how to use the library and its functions
+The file template.c provides a template that one can adjust to one's needs
+quickly and start using the library
