@@ -17,7 +17,7 @@ Program desc = { "Optimiser", "0.0.1", "Copyright(C) John Doe 2021-25" };
 int main(int argc, const char** argv) {
     ProgramDetails(&desc);
 	int s = ParseOptions((Option**)&options, argc, argv);
-	if (s != SUCCESS) {
+	if (s != CMDLINE_SUCCESS) {
 		printf("Result = %d\n", s);
 		return 1;
 	}

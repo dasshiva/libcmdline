@@ -3,7 +3,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-namespace cmdline {
 #endif
 
 #include <stdint.h>
@@ -68,24 +67,26 @@ int ParseOptions(Option** opts, const int argc, const char** argv);
 // the options present in opts
 void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen);
 
-#define ARG_NULL (-1)
-#define UNEXPECTED_FORMAT_ARG (-2)
-#define INVALID_OPTION (-3)
-#define DUPLICATE_DEFAULT_OPTION (-4)
-#define INVALID_DEFAULT_OPTION_ARGS (-5)
-#define UNKNOWN_SHORT_OPTION (-6)
-#define UNKNOWN_LONG_OPTION (-7)
-#define INSUFFICIENT_OPTION_ARGS (-8)
-#define INVALID_INTEGER_LITERAL (-9)
-#define USER_FUNC_ERROR (-10)
-#define DUPLICATE_OPTION (-11)
-#define REQUIRED_OPTION_MISSING (-12)
+enum Status {
+    CMDLINE_SUCCESS = 1,
+    ARG_NULL = -1,
+    UNEXPECTED_FORMAT_ARG = -2,
+    INVALID_OPTION = -3,
+    DUPLICATE_DEFAULT_OPTION = -4,
+    INVALID_DEFAULT_OPTION_ARGS = -5,
+    UNKNOWN_SHORT_OPTION = -6,
+    UNKNOWN_LONG_OPTION = -7,
+    INSUFFICIENT_OPTION_ARGS = -8,
+    INVALID_INTEGER_LITERAL = -9,
+    USER_FUNC_ERROR = -10,
+    DUPLICATE_OPTION = -11,
+    REQUIRED_OPTION_MISSING = -12,
+    NO_DEFAULT_OPTION = -13,
+};
 
-#define SUCCESS  (1)
-#define INVALID_OPTION_INDEX(x) (((x) > SUCCESS) ? ((x) - SUCCESS - 1) : -1)
+#define INVALID_OPTION_INDEX(x) (((x) > CMDLINE_SUCCESS) ? ((x) - CMDLINE_SUCCESS - 1) : -1)
 
 #ifdef __cplusplus
-}
 }
 #endif
 

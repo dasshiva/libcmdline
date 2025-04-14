@@ -15,7 +15,7 @@ static Program* program    = NULL;
 
 static int ParseSchema(Option* opt, const char* fmt) {
     if (!fmt)
-        return SUCCESS;
+        return CMDLINE_SUCCESS;
 
     int len = strlen(fmt);
     if (!(len % 2)) // There are always an odd no: of entries in fmt
@@ -39,7 +39,7 @@ static int ParseSchema(Option* opt, const char* fmt) {
     if (n != opt->NArgs)
         return -1;
 
-    return SUCCESS;
+    return CMDLINE_SUCCESS;
 }
 
 int ProgramDetails(Program* prog) {
@@ -47,7 +47,7 @@ int ProgramDetails(Program* prog) {
         return ARG_NULL;
 
     program = prog;
-    return SUCCESS;
+    return CMDLINE_SUCCESS;
 }
 
 static Option* FindShortOpt(Option** opts, const uint32_t oplen, 
@@ -100,7 +100,7 @@ static int ParseShortOption(Option** opts, int* idx, const int argc,
 
     if (option == OPTION_HELP) {
         GenerateHelp(argv[0], opts, oplen);
-        return SUCCESS;
+        return CMDLINE_SUCCESS;
     }
 
     if (option->Flags & OPTION_DONE)
@@ -109,7 +109,7 @@ static int ParseShortOption(Option** opts, int* idx, const int argc,
     option->Flags |= OPTION_PRESENT;
 
     if (!option->NArgs)
-        return SUCCESS;
+        return CMDLINE_SUCCESS;
     return ParseArgs(option, idx, argc, argv);
 }
 
@@ -124,7 +124,7 @@ static int ParseLongOption(Option** opts, int* idx, const int argc,
 
      if (option == OPTION_HELP) {
         GenerateHelp(argv[0], opts, oplen);
-        return SUCCESS;
+        return CMDLINE_SUCCESS;
     }
 
      if (option->Flags & OPTION_DONE)
@@ -132,15 +132,19 @@ static int ParseLongOption(Option** opts, int* idx, const int argc,
 
     option->Flags |= OPTION_PRESENT;
     if (!option->NArgs)
-        return SUCCESS;
+        return CMDLINE_SUCCESS;
 
     return ParseArgs(option, idx, argc, argv); 
 }
 
 static int ParseDefaultOptionArgs(Option* defopt, int* idx, int argc, 
         const char** argv, const char* opt) {
-     if (defopt->Flags & OPTION_DONE)
+    if (!defopt)
+       return NO_DEFAULT_OPTION;
+
+    if (defopt->Flags & OPTION_DONE)
         return DUPLICATE_OPTION;
+
 	int s = ParseArgs(defopt, idx, argc, argv);
 	defopt->Flags |= OPTION_PRESENT;
 	return s;
@@ -193,7 +197,7 @@ static int ParseArgs(Option* opt, int* idx, int argc, const char** argv) {
             return USER_FUNC_ERROR;
 
     opt->Flags |= OPTION_DONE;
-    return SUCCESS;
+    return CMDLINE_SUCCESS;
 }
 
 void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen) {
@@ -244,13 +248,13 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
         Option* option = *tmp;
         if (!(option->ShortOption) && 
                 !(option->LongOption)) 
-            return (opt + SUCCESS + 1); // + 1 ensures we don't return SUCCESS
+            return (opt + CMDLINE_SUCCESS + 1); // + 1 ensures we don't return SUCCESS
 
         if ((!option->NArgs && option->Fmt) || (option->NArgs && !option->Fmt))
             return UNEXPECTED_FORMAT_ARG;
 
         if (ParseSchema(option, option->Fmt) < 0)
-            return (opt + SUCCESS + 1);
+            return (opt + CMDLINE_SUCCESS + 1);
 
         if (option->Flags & OPTION_REQUIRED) 
             state |= REQUIRED_OPTION_PRESENT;
@@ -270,12 +274,12 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
         if ((state & NO_WORK) || 
            !((state& REQUIRED_OPTION_PRESENT) &&
                (state & DEFAULT_OPTION_PRESENT)))
-            return SUCCESS;
+            return CMDLINE_SUCCESS;
 
         // Default option itself has default arguments
         if (defopt) 
 			if (defopt->Args)
-				return SUCCESS;
+				return CMDLINE_SUCCESS;
     }
 
     // Save the program name
@@ -334,7 +338,7 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
 		}
 	}
 
-    return SUCCESS;
+    return CMDLINE_SUCCESS;
 }
 
 void FreeOptionArgs(Option** args) {

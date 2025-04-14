@@ -34,7 +34,7 @@ int main(int argc, const char** argv) {
 	int s = ParseOptions((Option**)&options, argc, argv);
 
     // If processing failed then take appropriate actions
-	if (s != SUCCESS) {
+	if (s != CMDLINE_SUCCESS) {
 		// code to deal with error here
         
         // Tell the executing environment that we failed
