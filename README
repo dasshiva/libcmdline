@@ -1,0 +1,20 @@
+libcmdline is a simple library meant for parsing command line options
+
+The library consists of a single C source file (libcmdline.c) and C header
+file (libcmdline.h) which can be easily integrated into any project.
+
+It exports four functions namely:
+1) ProgramDetails()
+2) ParseOptions()
+3) GenerateHelp()
+4) FreeOptions()
+
+Documentation on these functions and the headers as well as the format
+of command line functions accepted by ParseOptions can be viewed by 
+reading the comments in both files.
+
+The library is very small (about 400 lines of C source) and you can 
+understand its source very quickly. It is not meant to be the fastest of
+its kind but it does it job effectively.
+
+The file main.c demonstrates how to use the library and its functions
