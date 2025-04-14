@@ -1,20 +1,22 @@
 #include "libcmdline.h"
 #include <stdlib.h>
 
-Option options[] = {
-	{"o", "optimise", "Specify the degree of optimisation", "n", NULL,
-		NULL, 1, OPTION_REQUIRED },
-	{"f", "file", "Specify the input file", "s", NULL, NULL, 
-		1, OPTION_REQUIRED | OPTION_DEFAULT }
+Option optimise = { "o", "optimise", "Specify the degree of optimisation", 
+    "n", NULL, NULL, 1, OPTION_REQUIRED };
+Option file = { "f", "file", "Specify the input file", "s", NULL, NULL, 
+		1, OPTION_REQUIRED | OPTION_DEFAULT };
+
+Option* options[] = {
+    &optimise,
+    &file,
+    NULL
 };
 
 Program desc = { "Optimiser", "0.0.1", "Copyright(C) John Doe 2021-25" };
-int main(int argc, char** argv) {
-	ProgramDetails(&desc);
-	RegisterOptions(options, 2);
-	if (ParseOptions(argc, argv) < 0)
+int main(int argc, const char** argv) {
+    ProgramDetails(&desc);
+	if (ParseOptions((Option**)&options, argc, argv) < 0)
 		return 1;
-
 	return 0;
 }
 

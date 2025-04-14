@@ -9,19 +9,13 @@
 #define DEFAULT_OPTION_PRESENT  (1u << 2)
 
 static Program* program    = NULL;
-static Option*  opts       = NULL;
-static uint32_t optlen     = 0U;
-static uint32_t stateflags = 0U;
-
-static Option*  dopt       = NULL;
-
 // Internal values of Option->flags
 #define OPTION_DONE       (1U << 3)
 #define NO_HELP_OPTION    (1U << 4)
 #define HAVE_SHORT_OPTION (1U << 6)
 #define HAVE_LONG_OPTION  (1U << 7)
 
-static int ParseSchema(Option opt, const char* fmt) {
+static int ParseSchema(Option* opt, const char* fmt) {
     if (!fmt)
         return SUCCESS;
 
@@ -44,7 +38,7 @@ static int ParseSchema(Option opt, const char* fmt) {
         }
     }
 
-    if (n != opt.NArgs)
+    if (n != opt->NArgs)
         return -1;
 
     return SUCCESS;
@@ -58,142 +52,24 @@ int ProgramDetails(Program* prog) {
     return SUCCESS;
 }
 
-int RegisterOptions(Option* options, uint32_t len) {
-    if (!options && len) // No options but len > 0
-        return ARG_NULL;
-
-    opts = options;
-    optlen = len;
-
-    if (!optlen)
-        stateflags |= NO_WORK;
-
-    for (uint32_t opt = 0; opt < len; opt++) {
-        Option option = opts[opt];
-        if (option.ShortOption)
-            option.Flags |= HAVE_SHORT_OPTION;
-
-        if (option.LongOption)
-            option.Flags |= HAVE_LONG_OPTION;
-
-        if (!(option.Flags & HAVE_SHORT_OPTION) && 
-                !(option.Flags & HAVE_LONG_OPTION)) 
-            return (opt + SUCCESS + 1); // + 1 ensures we don't return SUCCESS
-
-        if (!option.Help)
-            option.Flags |= NO_HELP_OPTION;
-
-        if ((!option.NArgs && option.Fmt) || (option.NArgs && !option.Fmt))
-            return UNEXPECTED_FORMAT_ARG;
-
-        if (ParseSchema(option, option.Fmt) < 0)
-            return (opt + SUCCESS + 1);
-
-        if (option.Flags & OPTION_REQUIRED) 
-            stateflags |= REQUIRED_OPTION_PRESENT;
-
-        if (option.Flags & OPTION_DEFAULT) {
-            if (stateflags & DEFAULT_OPTION_PRESENT)
-                return DUPLICATE_DEFAULT_OPTION;
-            stateflags |= DEFAULT_OPTION_PRESENT;
-            dopt = &option;
-        }
-    }
-
-    return SUCCESS;
-}
-
-static int ParseShortOption(int*, int, char**, char*, int);
-static int ParseLongOption(int*, int, char**, char*, int);
-static int ParseDefaultOptionArgs(int*, int, char**, char*);
-
-int ParseOptions(int argc, char** argv) {
-    if (argc == 1) {
-        /*if ((stateflags & NO_WORK) || 
-           !((stateflags & REQUIRED_OPTION_PRESENT) &&
-               (stateflags & DEFAULT_OPTION_PRESENT)))
-            return SUCCESS; */
-
-        // Default option itself has default arguments
-        if (dopt) 
-			if (dopt->Args)
-				return SUCCESS;
-    }
-
-    // Save the program name
-    const char* progname = argv[0]; 
-
-    // All options look like this
-    // Option = LONG_OPT | SHORT_OPT
-    // LONG_OPT = "--" LONG_OPT_TEXT ARGS
-    // SHORT_OPT = '-' SHORT_OPT_TEXT ARGS
-    // LONG_OPT_TEXT = <pseudo symbol representing Option->LongOption >
-    // SHORT_OPT_TEXT = <pseudo symbol representing Option->ShortOption > 
-    // ARGS = ARG { (" ")+ ARG }
-    // ARG = string | number
-    // string = <pseudo symbol that represents all sequences of characters>
-    // number = <pseudo symbol that represents all sequences of digits>
-    for (int i = 1; i < argc;) {
-        char* sptr = argv[i];
-        int len = strlen(sptr);
-
-		if (len >= 3) {
-            if (sptr[0] == '-' && sptr[1] == '-') {
-                if (ParseLongOption(&i, argc, argv, sptr, len - 2) < 0)
-                    return INVALID_OPTION;
-			}
-
-			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0) 
-                return INVALID_DEFAULT_OPTION_ARGS;
-			
-        }
-
-		else if (len >= 2) {
-            if (sptr[0] == '-') {
-                if (ParseShortOption(&i, argc, argv, sptr, len - 1) < 0)
-                    return INVALID_OPTION;
-			}
-
-			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0) 
-                return INVALID_DEFAULT_OPTION_ARGS;
-			
-        }
-
-
-        else { /* All cases are already covered */ }
-
-    }
-
-	for (uint32_t id = 0; id < optlen; id++) {
-		Option opt = opts[id];
-		if ((opt.Flags & OPTION_REQUIRED) && !(opt.Flags & OPTION_PRESENT)) {
-			if (opt.ShortOption) 
-				fprintf(stdout, "Required option -%s not found\n", opt.ShortOption);
-			else
-				fprintf(stdout, "Required option --%s not found\n", opt.LongOption);
-			return REQUIRED_OPTION_MISSING;
-
-		}
-	}
-
-    return SUCCESS;
-}
-
-static Option* FindShortOpt(const char* name, int len) {
-    for (uint32_t n = 0; n < optlen; n++) {
-        if (strncmp(opts[n].ShortOption, name, len) == 0)
-            return &opts[n];
+static Option* FindShortOpt(Option** opts, const uint32_t oplen, 
+        const char* name) {
+    for (uint32_t n = 0; n < oplen; n++) {
+        if (strcmp(opts[n]->ShortOption, name) == 0)
+            return opts[n];
     }
 
     if (strcmp(name, "h") == 0)
         return OPTION_HELP;
+
     return NULL;
 }
 
-static Option* FindLongOpt(const char* name, int len) {
-    for (uint32_t n = 0; n < optlen; n++) {
-        if (strncmp(opts[n].LongOption, name, len) == 0)
-            return &opts[n];
+static Option* FindLongOpt(Option** opts, const uint32_t oplen, 
+        const char* name) {
+    for (uint32_t n = 0; n < oplen; n++) {
+        if (strcmp(opts[n]->LongOption, name) == 0)
+            return opts[n];
     }
 
     if (strcmp(name, "h") == 0)
@@ -203,19 +79,20 @@ static Option* FindLongOpt(const char* name, int len) {
 }
 
 
-static int ParseArgs(Option*, int*, int, char**);
+static int ParseArgs(Option*, int*, int, const char**);
 
-static int ParseShortOption(int* idx, int argc, char** argv, 
-        char* opt, int len) {
+static int ParseShortOption(Option** opts, int* idx, const int argc, 
+        const char** argv, const char* opt, const uint32_t oplen) {
     // If we came here, len > 2
-    opt++;
+    const char* opname = (opt + 1);
 	(*idx)++;
-    Option* option = FindShortOpt(opt, len);
+
+    Option* option = FindShortOpt(opts, oplen, opname);
     if (!option)
         return UNKNOWN_SHORT_OPTION;
 
     if (option == OPTION_HELP) {
-        GenerateHelp(argv[0]);
+        GenerateHelp(argv[0], opts, oplen);
         return SUCCESS;
     }
 
@@ -229,17 +106,17 @@ static int ParseShortOption(int* idx, int argc, char** argv,
     return ParseArgs(option, idx, argc, argv);
 }
 
-static int ParseLongOption(int* idx, int argc, char** argv, 
-        char* opt, int len) {
+static int ParseLongOption(Option** opts, int* idx, const int argc, 
+        const char** argv, const char* opt, const uint32_t oplen) {
     // If we came here, len > 3
-    opt += 2;
+    const char* opname = (opt + 2);
 	(*idx)++;
-    Option* option = FindLongOpt(opt, len);
+    Option* option = FindLongOpt(opts, oplen, opname);
     if (!option)
         return UNKNOWN_LONG_OPTION;
 
      if (option == OPTION_HELP) {
-        GenerateHelp(argv[0]);
+        GenerateHelp(argv[0], opts, oplen);
         return SUCCESS;
     }
 
@@ -253,16 +130,16 @@ static int ParseLongOption(int* idx, int argc, char** argv,
     return ParseArgs(option, idx, argc, argv); 
 }
 
-static int ParseDefaultOptionArgs(int* idx, int argc, char** argv, 
-        char* opt) {
-     if (dopt->Flags & OPTION_DONE)
+static int ParseDefaultOptionArgs(Option* defopt, int* idx, int argc, 
+        const char** argv, const char* opt) {
+     if (defopt->Flags & OPTION_DONE)
         return DUPLICATE_OPTION;
-	int s = ParseArgs(dopt, idx, argc, argv);
-	dopt->Flags |= OPTION_PRESENT;
+	int s = ParseArgs(defopt, idx, argc, argv);
+	defopt->Flags |= OPTION_PRESENT;
 	return s;
 }
 
-static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
+static int ParseArgs(Option* opt, int* idx, int argc, const char** argv) {
     char* schema = opt->Fmt;
     uint32_t opt_idx = 0;
 
@@ -310,27 +187,145 @@ static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
     return SUCCESS;
 }
 
-void GenerateHelp(const char* progname) {
+void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen) {
     if (program)
         fprintf(stdout, "%s %s\n%s\n", program->Name, program->Version,
                 program->Copyright);
-    fprintf(stdout, "%s [OPTIONS] ", progname);
-    if (dopt) 
-        fprintf(stdout, "<%s>\n", dopt->LongOption);
-    else
-        fprintf(stdout, "\n");
+    fprintf(stdout, "%s [OPTIONS]\n", progname);
 
     fprintf(stdout, "Available options: \n");
-    for (uint32_t opt = 0; opt < optlen; opt++) {
-        Option option = opts[opt];
-        if (option.ShortOption)
-            fprintf(stdout, "-%s", option.ShortOption);
+    for (uint32_t opt = 0; opt < oplen; opt++) {
+        Option* option = opts[opt];
+        if (option->ShortOption)
+            fprintf(stdout, "-%s", option->ShortOption);
 
-        if (option.LongOption)
-            fprintf(stdout, "/--%s ", option.LongOption);
+        if (option->LongOption)
+            fprintf(stdout, "/--%s ", option->LongOption);
 
-        if (!(option.Flags & NO_HELP_OPTION))
-            fprintf(stdout, "\t- %s", option.Help);
+        if (!(option->Flags & NO_HELP_OPTION))
+            fprintf(stdout, "\t- %s", option->Help);
         fprintf(stdout, "\n");
     }
+}
+
+int ParseOptions(Option** opts, const int argc, const char** argv) {
+    uint32_t oplen = 0, state = 0;
+    Option** tmp = opts;
+    Option* defopt = NULL;
+
+    while (*tmp) {
+        tmp++;
+        oplen++;
+    }
+
+    printf("oplen = %u\n", oplen);
+
+    if (!oplen)
+        state |= NO_WORK;
+
+    tmp = opts;
+    uint32_t opt = 0;
+    while (*tmp) {
+        Option* option = *tmp;
+        if (option->ShortOption)
+            option->Flags |= HAVE_SHORT_OPTION;
+
+        if (option->LongOption)
+            option->Flags |= HAVE_LONG_OPTION;
+
+        if (!(option->Flags & HAVE_SHORT_OPTION) && 
+                !(option->Flags & HAVE_LONG_OPTION)) 
+            return (opt + SUCCESS + 1); // + 1 ensures we don't return SUCCESS
+
+        if (!option->Help)
+            option->Flags |= NO_HELP_OPTION;
+
+        if ((!option->NArgs && option->Fmt) || (option->NArgs && !option->Fmt))
+            return UNEXPECTED_FORMAT_ARG;
+
+        if (ParseSchema(option, option->Fmt) < 0)
+            return (opt + SUCCESS + 1);
+
+        if (option->Flags & OPTION_REQUIRED) 
+            state |= REQUIRED_OPTION_PRESENT;
+
+        if (option->Flags & OPTION_DEFAULT) {
+            if (state & DEFAULT_OPTION_PRESENT)
+                return DUPLICATE_DEFAULT_OPTION;
+            state |= DEFAULT_OPTION_PRESENT;
+            defopt = option;
+        }
+        opt++;
+        tmp++;
+    }
+
+    if (argc == 1) {
+        /*if ((stateflags & NO_WORK) || 
+           !((stateflags & REQUIRED_OPTION_PRESENT) &&
+               (stateflags & DEFAULT_OPTION_PRESENT)))
+            return SUCCESS; */
+
+        // Default option itself has default arguments
+        if (defopt) 
+			if (defopt->Args)
+				return SUCCESS;
+    }
+
+    // Save the program name
+    const char* progname = argv[0]; 
+
+    // All options look like this
+    // Option = LONG_OPT | SHORT_OPT
+    // LONG_OPT = "--" LONG_OPT_TEXT ARGS
+    // SHORT_OPT = '-' SHORT_OPT_TEXT ARGS
+    // LONG_OPT_TEXT = <pseudo symbol representing Option->LongOption >
+    // SHORT_OPT_TEXT = <pseudo symbol representing Option->ShortOption > 
+    // ARGS = ARG { (" ")+ ARG }
+    // ARG = string | number
+    // string = <pseudo symbol that represents all sequences of characters>
+    // number = <pseudo symbol that represents all sequences of digits>
+    for (int i = 1; i < argc;) {
+        const char* sptr = argv[i];
+        int len = strlen(sptr);
+
+		if (len >= 3) {
+            if (sptr[0] == '-' && sptr[1] == '-') {
+                if (ParseLongOption(opts, &i, argc, argv, sptr, oplen) < 0)
+                    return INVALID_OPTION;
+			}
+
+			else if (ParseDefaultOptionArgs(defopt, &i, argc, argv, sptr) < 0) 
+                return INVALID_DEFAULT_OPTION_ARGS;
+			
+        }
+
+		else if (len >= 2) {
+            if (sptr[0] == '-') {
+                if (ParseShortOption(opts, &i, argc, argv, sptr, oplen) < 0)
+                    return INVALID_OPTION;
+			}
+
+			else if (ParseDefaultOptionArgs(defopt, &i, argc, argv, sptr) < 0) 
+                return INVALID_DEFAULT_OPTION_ARGS;
+			
+        }
+
+
+        else { /* All cases are already covered */ }
+
+    }
+
+	for (uint32_t id = 0; id < oplen; id++) {
+		Option* opt = opts[id];
+		if ((opt->Flags & OPTION_REQUIRED) && !(opt->Flags & OPTION_PRESENT)) {
+			if (opt->ShortOption) 
+				fprintf(stdout, "Required option -%s not found\n", opt->ShortOption);
+			else
+				fprintf(stdout, "Required option --%s not found\n", opt->LongOption);
+			return REQUIRED_OPTION_MISSING;
+
+		}
+	}
+
+    return SUCCESS;
 }

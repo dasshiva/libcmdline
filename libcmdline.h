@@ -10,8 +10,8 @@ namespace cmdline {
 
 typedef struct {
     union {
-        char*    String;
-        int64_t  Number;
+        const char* String;
+        int64_t     Number;
     };
     uint32_t Type;
 } OptionArgs;
@@ -48,10 +48,9 @@ typedef struct {
 #define OPTION_PRESENT  (1U << 2)
 
 int ProgramDetails(Program* prog);
-int RegisterOptions(Option* options, uint32_t len);
-int ParseOptions(int argc, char** argv);
 int FreeOptions(Option* options, uint32_t len);
-void GenerateHelp(const char* progname); 
+int ParseOptions(Option** opts, const int argc, const char** argv);
+void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen);
 
 #define ARG_NULL (-1)
 #define UNEXPECTED_FORMAT_ARG (-2)
