@@ -59,7 +59,7 @@ typedef struct {
 int ProgramDetails(Program* prog);
 
 // Free Option.Args
-int FreeOptionArgs(Option* options, uint32_t len);
+void FreeOptionArgs(Option** options);
 
 // Parse command line options from argv having argc command line args
 int ParseOptions(Option** opts, const int argc, const char** argv);

@@ -10,10 +10,8 @@
 
 static Program* program    = NULL;
 // Internal values of Option->flags
-#define OPTION_DONE       (1U << 3)
-#define NO_HELP_OPTION    (1U << 4)
-#define HAVE_SHORT_OPTION (1U << 6)
-#define HAVE_LONG_OPTION  (1U << 7)
+#define OPTION_DONE         (1U << 3)
+#define SELF_ALLOCATED_ARGS (1U << 4)
 
 static int ParseSchema(Option* opt, const char* fmt) {
     if (!fmt)
@@ -154,8 +152,10 @@ static int ParseArgs(Option* opt, int* idx, int argc, const char** argv) {
 
 	// If opt.args is initialised these are the default values
     // for the option's arguments and we should not touch them
-    if (!opt->Args)
+    if (!opt->Args) {
+		opt->Flags |= SELF_ALLOCATED_ARGS;
         opt->Args = malloc(sizeof(OptionArgs) * opt->NArgs);
+	}
 
     while (*schema) {
         if (*idx >= argc)
@@ -331,3 +331,13 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
 
     return SUCCESS;
 }
+
+void FreeOptionArgs(Option** args) {
+	while (*args) {
+		Option* opt = *args;
+		if (opt->Flags & SELF_ALLOCATED_ARGS) 
+			free(opt->Args);
+		args++;
+	}
+}
+

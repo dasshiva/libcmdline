@@ -23,6 +23,7 @@ int main(int argc, const char** argv) {
 
 	printf("File = %s\n", file.Args->String);
 	printf("Optimisation = %ld\n", optimise.Args->Number);
+	FreeOptionArgs((Option**)&options);
 	return 0;
 }
 
