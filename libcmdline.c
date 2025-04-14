@@ -300,9 +300,16 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
         int len = strlen(sptr);
 
 		if (len >= 3) {
-            if (sptr[0] == '-' && sptr[1] == '-') {
-                if (ParseLongOption(opts, &i, argc, argv, sptr, oplen) < 0)
-                    return INVALID_OPTION;
+            if (sptr[0] == '-') { 
+                if (sptr[1] == '-') {
+                    if (ParseLongOption(opts, &i, argc, argv, sptr, oplen) < 0)
+                        return INVALID_OPTION;
+                }
+
+                else {
+                    if (ParseShortOption(opts, &i, argc, argv, sptr, oplen) < 0)
+                        return INVALID_OPTION;
+                }
 			}
 
 			else if (ParseDefaultOptionArgs(defopt, &i, argc, argv, sptr) < 0) 
@@ -310,7 +317,7 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
 			
         }
 
-		else if (len >= 2) {
+		else if (len == 2) {
             if (sptr[0] == '-') {
                 if (ParseShortOption(opts, &i, argc, argv, sptr, oplen) < 0)
                     return INVALID_OPTION;
@@ -322,7 +329,10 @@ int ParseOptions(Option** opts, const int argc, const char** argv) {
         }
 
 
-        else { /* All cases are already covered */ }
+        else {
+            if (ParseDefaultOptionArgs(defopt, &i, argc, argv, sptr) < 0) 
+                return INVALID_DEFAULT_OPTION_ARGS;
+        }
 
     }
 
