@@ -214,8 +214,13 @@ void GenerateHelp(const char* progname, Option** opts, const uint32_t oplen) {
         if (option->LongOption)
             fprintf(stdout, "--%s ", option->LongOption);
 
-        if (option->Help)
-            fprintf(stdout, "\t- %s", option->Help);
+        if (option->Help) {
+            if (!option->LongOption)
+                fprintf(stdout, "\t\t- %s", option->Help);
+            else
+                fprintf(stdout, "\t- %s", option->Help);
+        }
+
         fprintf(stdout, "\n");
     }
 }
