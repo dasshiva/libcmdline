@@ -136,7 +136,6 @@ int ParseOptions(int argc, char** argv) {
     for (int i = 1; i < argc;) {
         char* sptr = argv[i];
         int len = strlen(sptr);
-        i++;
 
 		if (len >= 3) {
             if (sptr[0] == '-' && sptr[1] == '-') {
@@ -144,8 +143,9 @@ int ParseOptions(int argc, char** argv) {
                     return INVALID_OPTION;
 			}
 
-			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
+			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0) 
                 return INVALID_DEFAULT_OPTION_ARGS;
+			
         }
 
 		else if (len >= 2) {
@@ -154,8 +154,9 @@ int ParseOptions(int argc, char** argv) {
                     return INVALID_OPTION;
 			}
 
-			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0)
+			else if (ParseDefaultOptionArgs(&i, argc, argv, sptr) < 0) 
                 return INVALID_DEFAULT_OPTION_ARGS;
+			
         }
 
 
@@ -208,6 +209,7 @@ static int ParseShortOption(int* idx, int argc, char** argv,
         char* opt, int len) {
     // If we came here, len > 2
     opt++;
+	(*idx)++;
     Option* option = FindShortOpt(opt, len);
     if (!option)
         return UNKNOWN_SHORT_OPTION;
@@ -231,6 +233,7 @@ static int ParseLongOption(int* idx, int argc, char** argv,
         char* opt, int len) {
     // If we came here, len > 3
     opt += 2;
+	(*idx)++;
     Option* option = FindLongOpt(opt, len);
     if (!option)
         return UNKNOWN_LONG_OPTION;
@@ -254,9 +257,9 @@ static int ParseDefaultOptionArgs(int* idx, int argc, char** argv,
         char* opt) {
      if (dopt->Flags & OPTION_DONE)
         return DUPLICATE_OPTION;
-
+	int s = ParseArgs(dopt, idx, argc, argv);
 	dopt->Flags |= OPTION_PRESENT;
-    return ParseArgs(dopt, idx, argc, argv);
+	return s;
 }
 
 static int ParseArgs(Option* opt, int* idx, int argc, char** argv) {
